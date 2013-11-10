@@ -43,17 +43,25 @@ int main(int argc, char* argv[])
 
     //get MST and print it
     MST_Kruskal mkr(g); 
-    vector<tuple<node, node, int>> MST = mkr.get_MST();
+    Graph  MST = mkr.get_MST();
     //print
-    cout << "Edges in MST: " << num_nodes << endl;
     cout << setw(7) << "source" << setw(7) << "dest" << setw(7) << "weight" << endl;
-    for(auto e = MST.begin(); e != MST.end(); e++)
+    //cout << MST ;
+    //for pretty printing
+    auto MST_vertices = MST.vertices();
+    int num_edges_MST = 0;
+    for(auto vx = MST_vertices.begin(); vx != MST_vertices.end(); vx++)
     {
-        src = get<0>(*e);
-        dest = get<1>(*e);
-        weight = get<2>(*e);
-        cout << setw(7) << src << setw(7)  << dest << setw(7) << weight << endl; 
+        src = *vx;
+        auto edges = MST.getEdgeList(src); 
+        for(auto e = edges.begin(); e != edges.end(); e++, num_edges_MST++)
+        {
+            dest = (*e).first;
+            weight = (*e).second;
+            cout << setw(7) << src << setw(7)  << dest << setw(7) << weight << endl; 
+        }
     }
+    cout << "Edges in MST: " << num_edges_MST << endl;
 
     if(mkr.get_weight() != -1)
         cout << "Minimum Weight: " << mkr.get_weight() << endl;

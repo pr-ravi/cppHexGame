@@ -1,4 +1,8 @@
+#ifndef KRUSKAL_H
+#define KRUSKAL_H
+
 #include "graph.h"
+#include "union_find.h"
 
 #include <tuple>
 #include <queue>
@@ -11,7 +15,7 @@ class MST_Kruskal
 {
     public:
     //get MST
-    vector<tuple<node,node,int>> get_MST();
+    Graph& get_MST();
     //get the connected component to which the node belongs
     int get_component(int v); 
     //constructor
@@ -30,8 +34,11 @@ class MST_Kruskal
     vector<vector<node>> forest;
     //connected components
     vector<vector<node>*> component;
-    //vector<int> component; 
+    //original graph reference
     Graph& g;
+    //MST Tree
+    Graph mst;
+
     void erase_tree(vector<node>& t);
 };
 
@@ -66,7 +73,7 @@ class LessTuple
 
 //calulate MST
 //return a vector of edges
-vector<tuple<node,node,int> > MST_Kruskal::get_MST() 
+Graph&  MST_Kruskal::get_MST() 
 {
     //priority queue for sorting edges
     priority_queue<tuple<node, node, int>, vector<tuple<node, node, int>>, LessTuple> pq;
@@ -99,7 +106,8 @@ vector<tuple<node,node,int> > MST_Kruskal::get_MST()
         //are the components disjoint?
         if(component[src] != component[dest])
         {
-            MST_edges.push_back(e);
+            mst.add_edge(src, dest, weight);
+            //MST_edges.push_back(e);
             min_weight += weight;
 
             //retrieve disjoint trees
@@ -120,12 +128,14 @@ vector<tuple<node,node,int> > MST_Kruskal::get_MST()
         }
     }
     this->weight = min_weight;
-    return MST_edges;
+    return mst;
+    //return MST_edges;
 }
 
 // constructor
 MST_Kruskal::MST_Kruskal(Graph &G): g(G) 
 {
+    mst = Graph(G.vertex_count());
     this->weight = -1;
     //get list of nodes
     this->V = g.vertices();
@@ -146,4 +156,4 @@ MST_Kruskal::MST_Kruskal(Graph &G): g(G)
     }
 };
 
-
+#endif

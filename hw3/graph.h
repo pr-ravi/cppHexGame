@@ -1,11 +1,9 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include<map>
-#include<vector>
-#include<iostream>
-#include<ctime>    //for time generation
-#include<cstdlib>  //for random generation
+#include <map>
+#include <vector>
+#include <iostream>
 
 
 typedef int node;    //makes sense
@@ -20,12 +18,13 @@ class Graph
         vector<map<node, int> > E;                          
         bool contains_vertex(node v);
         bool contains_edge(node from, node to, int weight);
-        Graph();
 
     public:
         //get the map associated with the vertex
         map<node, int>& getEdgeList(node v);
         bool add_edge(node from, node to, int weight);
+        //constructors
+        Graph();
         Graph(int numVertices);
         //this is for output, debug
         friend ostream& operator<<(ostream& out, Graph g);

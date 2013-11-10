@@ -1,6 +1,8 @@
 #include "graph.h"
 #include "dijkstra.h"
 
+#include<ctime>    //for time generation
+#include<cstdlib>  //for random generation
 //generate random number between [1, max]
 int rnd(int max)
 {
