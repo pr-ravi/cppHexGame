@@ -24,6 +24,8 @@ UnionFind::UnionFind(int num_nodes)
     connected.reserve(num_nodes);
     size.reserve(num_nodes);
 
+    //initialize the component array to its index
+    //and set size of all trees to 1
     for(auto i = 0 ; i < num_nodes; i++)
     {
         connected.push_back(i);
@@ -53,14 +55,14 @@ void UnionFind::union_node(int src, int dest)
     int cmp2 = component(dest);
 
     //add smaller tree to larger one
-    if(size[cmp1] >= size[cmp2]) 
+    if(size[cmp1] < size[cmp2]) 
     {
-        connected[dest] = src;
+        connected[cmp1] = cmp2;
         size[cmp1] += size[cmp2];
     }
     else
     {
-        connected[src] = dest;
+        connected[cmp2] = cmp1;
         size[cmp2] += size[cmp1];
     }
 }

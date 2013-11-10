@@ -6,8 +6,6 @@
 
 #include <tuple>
 #include <queue>
-#include <algorithm>
-#include <iterator>
 
 
 //class implementing Kruskal's Algorithm
@@ -16,8 +14,6 @@ class MST_Kruskal
     public:
     //get MST
     Graph& get_MST();
-    //get the connected component to which the node belongs
-    int get_component(int v); 
     //constructor
     MST_Kruskal(Graph &G); 
     //get weight of MST
@@ -29,17 +25,13 @@ class MST_Kruskal
     //is the forest connected?
     bool is_connected();
     //vertices
-    vector<node> V ;
-    //forest of vectors for trees
-    vector<vector<node>> forest;
-    //connected components
-    vector<vector<node>*> component;
+    vector<node> V;
     //original graph reference
     Graph& g;
     //MST Tree
     Graph mst;
-
-    void erase_tree(vector<node>& t);
+    //union find object
+    UnionFind uf;
 };
 
 //get MST weight
@@ -49,13 +41,10 @@ int MST_Kruskal::get_weight()
 }
 
 //is the forest connected?
-bool MST_Kruskal::is_connected()
+inline bool MST_Kruskal::is_connected()
 {
-    vector<node>* ptr = *component.begin();
-    for(auto it = component.begin(); it != component.end(); it++)
-        if(ptr != *it)
-            return false;
-    return true;
+    // edges =  num_vertices - 1
+    return static_cast<size_t>(this->mst.edges()) == this->V.size() - 1;
 }
 
 //functor for sorting the PQ
@@ -72,13 +61,11 @@ class LessTuple
 
 
 //calulate MST
-//return a vector of edges
+//return the MST graph
 Graph&  MST_Kruskal::get_MST() 
 {
     //priority queue for sorting edges
     priority_queue<tuple<node, node, int>, vector<tuple<node, node, int>>, LessTuple> pq;
-    //edges in MST
-    vector<tuple<node, node, int>> MST_edges;
     //minimum weight
     int min_weight = 0;
 
@@ -104,56 +91,25 @@ Graph&  MST_Kruskal::get_MST()
         weight = get<2>(e);
 
         //are the components disjoint?
-        if(component[src] != component[dest])
+        if(! uf.is_connected(src, dest))
         {
+            //add edge to MST graph
             mst.add_edge(src, dest, weight);
-            //MST_edges.push_back(e);
+            //union the two components
+            uf.union_node(src, dest);
             min_weight += weight;
-
-            //retrieve disjoint trees
-            vector<node>& v1 = *component[src];
-            vector<node>& v2 = *component[dest];
-
-            //copy to new vector
-            vector<node> v3;
-            v3.reserve(v1.size() + v2.size());
-            copy(v1.begin(), v1.end(), back_inserter(v3));
-            copy(v2.begin(), v2.end(), back_inserter(v3));
-
-            //insert new tree
-            forest.push_back(v3);
-            //update component values 
-            for(auto it = v3.begin(); it != v3.end(); it++)
-                component[*it] = &forest[forest.size() -1 ];
         }
     }
     this->weight = min_weight;
     return mst;
-    //return MST_edges;
 }
 
 // constructor
-MST_Kruskal::MST_Kruskal(Graph &G): g(G) 
+MST_Kruskal::MST_Kruskal(Graph &G): g(G), uf(UnionFind(G.vertex_count()))
 {
     mst = Graph(G.vertex_count());
     this->weight = -1;
-    //get list of nodes
     this->V = g.vertices();
-    //for perf
-    this->forest.reserve(V.size() * V.size());
-    this->component.reserve(V.size());
-    //create a forest of disjoint trees
-    int i = 0;
-    for(auto it = V.begin(); it != V.end(); i++, it++)
-    {
-        vector<node> s;
-        s.push_back(*it);
-        forest.push_back(s);
-
-        //set pointer to the newly added tree
-        vector<node>* p = &forest[forest.size() -1 ];
-        component.push_back(p);
-    }
 };
 
 #endif

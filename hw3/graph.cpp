@@ -1,5 +1,9 @@
 #include "graph.h"
 
+int Graph::edges()
+{
+    return num_edges;
+}
 
 node Graph::vertex_count() { return V.size(); }
 
@@ -9,7 +13,6 @@ vector<int> Graph::vertices()
 }
 
 
-Graph::Graph() {}
 map<node, int>& Graph::getEdgeList(const node v)
 {
     return this->E[v];
@@ -60,30 +63,38 @@ bool Graph::add_edge(const node from, const node to, const int weight)
 {
     if(from == to)
         return false;
-   //cout << "size:" <<  this->E.size();
-   pair<node, int> p(to,weight);
-   if(this->contains_vertex(from) && this->contains_vertex(to))
-        {
-           this->E[from].insert(p);
-           //cout<< Edge(to, weight);
-           return true;
-        }
 
-   return false;
+    pair<node, int> p(to,weight);
+    if(this->contains_vertex(from) && this->contains_vertex(to))
+    {
+        this->E[from].insert(p);
+        this->num_edges++;
+        return true;
+    }
+
+    return false;
 }
 
+//create graph with n vertices
 Graph::Graph(int const nVertices) 
 {
     size_t sz = static_cast<size_t>(nVertices); 
+    this->num_edges = 0;
 
-    V.reserve(sz);
-    E.reserve(sz);
+    this->V.reserve(sz);
+    this->E.reserve(sz);
 
+    //create vertices
     for(int i = 0; i < nVertices; i++)
         this->V.push_back(i);
     
+    //create initial edgelist for each vertex
     for(int i =0; i < nVertices; i++)
         this->E.push_back(map<node, int> ());
 
 }
 
+Graph::Graph() 
+{
+    this->num_edges = 0;
+}

@@ -16,6 +16,7 @@ class Graph
         vector<int> V;                      
         //vector of maps with node as key and weight as value
         vector<map<node, int> > E;                          
+        int num_edges;
         bool contains_vertex(node v);
         bool contains_edge(node from, node to, int weight);
 
@@ -32,7 +33,10 @@ class Graph
         friend void test();
         //number of nodes
         node vertex_count();
+        //get list of vertices
         vector<int> vertices();
+        //get number of edges
+        int edges();
         
 };
 
