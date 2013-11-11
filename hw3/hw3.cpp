@@ -14,32 +14,10 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-
-    //read input file
-    ifstream fl(argv[1], ios::in);
-    //could not open file
-    if(! fl.is_open())
-        cout << "Error opening file " << endl;
-
-    int num_nodes, num_edges = 0;
-    int src, dest, weight;
-    //get number of nodes
-    fl >> num_nodes;
-
-    //create graph and add edges
-    Graph g(num_nodes);
-    while(! fl.eof())
-    {
-        fl >> src >> dest >> weight;
-        g.add_edge(src, dest, weight);
-        num_edges++;
-    }
-
-    //close file
-    fl.close();
-
-    cout << "Number of vertices: " << num_nodes << endl;
-    cout << "Number of edges: " << num_edges << endl;
+    //create graph 
+    Graph g(argv[1]);
+    cout << "Number of vertices: " << g.vertex_count() << endl;
+    cout << "Number of edges: " << g.edges() << endl;
 
     //get MST and print it
     MST_Kruskal mkr(g); 
@@ -50,6 +28,7 @@ int main(int argc, char* argv[])
     //for pretty printing
     auto MST_vertices = mst.vertices();
     int num_edges_MST = 0;
+    int src, dest, weight;
     for(auto vx = MST_vertices.begin(); vx != MST_vertices.end(); vx++)
     {
         src = *vx;

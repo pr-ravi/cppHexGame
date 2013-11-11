@@ -1,9 +1,11 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include <fstream>
 #include <map>
 #include <vector>
 #include <iostream>
+#include <string>
 
 
 typedef int node;    //makes sense
@@ -25,8 +27,11 @@ class Graph
         map<node, int>& getEdgeList(node v);
         bool add_edge(node from, node to, int weight);
         //constructors
+        Graph(string flname);
         Graph();
-        Graph(int numVertices);
+        Graph(int num_nodes);
+        //prepare edge list & reserve space
+        void init(int nVertices);
         //this is for output, debug
         friend ostream& operator<<(ostream& out, Graph g);
         //testcase

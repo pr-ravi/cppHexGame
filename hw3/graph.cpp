@@ -76,7 +76,14 @@ bool Graph::add_edge(const node from, const node to, const int weight)
 }
 
 //create graph with n vertices
-Graph::Graph(int const nVertices) 
+Graph::Graph(int num_nodes)
+{
+
+    init(num_nodes);
+}
+
+//initialize edgelist & resreve space
+void Graph::init(int const nVertices) 
 {
     size_t sz = static_cast<size_t>(nVertices); 
     this->num_edges = 0;
@@ -92,6 +99,32 @@ Graph::Graph(int const nVertices)
     for(int i =0; i < nVertices; i++)
         this->E.push_back(map<node, int> ());
 
+}
+
+//create a graph from a file
+Graph::Graph(string flname)
+{
+    //read input file
+    ifstream fl(flname, ios::in);
+    //could not open file
+    if(! fl.is_open())
+        cout << "Error opening file " << endl;
+
+    int num_nodes, num_edges = 0;
+    int src, dest, weight;
+    //get number of nodes
+    fl >> num_nodes;
+    //initialize and add edges
+    init(num_nodes);
+    while(! fl.eof())
+    {
+        fl >> src >> dest >> weight;
+        this->add_edge(src, dest, weight);
+        num_edges++;
+    }
+
+    //close file
+    fl.close();
 }
 
 Graph::Graph() 
