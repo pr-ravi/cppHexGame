@@ -11,10 +11,10 @@ class UnionFind {
         UnionFind(int num_nodes);
         void union_node(int src, int dest);
         bool is_connected(int src, int dest);
+        vector<int> connected, size;
 
     private:
         int component(int n);
-        vector<int> connected, size;
 
 };
 

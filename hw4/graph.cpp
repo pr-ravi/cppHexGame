@@ -1,39 +1,38 @@
 #include "graph.h"
 
-int Graph::edges()
-{
-    return num_edges;
-}
+//return no of edges
+int Graph::edges() { return num_edges; }
 
+//return no of vertices
 node Graph::vertex_count() { return V.size(); }
 
-vector<int> Graph::vertices() 
-{
-    return this->V;
-}
+//return vector of vertices
+vector<int> Graph::vertices() { return this->V; }
 
 
+//return edgelist of the vertex
 map<node, int>& Graph::getEdgeList(const node v)
 {
     return this->E[v];
 }
 
+//print the graph
 ostream& operator<<(ostream& out, Graph g)
 {
     out << "Vertices: " << "{ ";
 
-    for(vector<int>::const_iterator it = g.V.begin(); it != g.V.end(); it++)
-        out << *it << "," ;
+    for(auto it: g.V)
+        out << it << "," ;
 
     out << "}" << endl; 
     out << "Edges: " << endl;
 
     int i = 0; 
-    for(vector<map<node, int> >::const_iterator it = g.E.begin(); it != g.E.end(); it++, i++)
+    for(auto item : g.E)
     {
         out << "E(" << i << "): {";
-        for(map<node, int>::const_iterator e = (*it).begin(); e != (*it).end(); e++)
-            out << *e << ", ";
+        for(auto edge : item)
+            out << edge << ", ";
         out << "}" << endl;
     }
 
@@ -41,30 +40,33 @@ ostream& operator<<(ostream& out, Graph g)
 }
 
 
-
-
+//does the graph contain the vertex?
 bool Graph::contains_vertex(const node v)
 {
-    for(vector<int>::iterator it = V.begin(); it != V.end(); it++)
-        if (*it == v) return true;
+    for(auto item : V)
+        if (item == v) return true;
 
     return false;
 }
 
+//does the graph contain the edge?
 bool Graph::contains_edge(const node from, const node to, const int weight)
 {
     pair<const node, int> p(to, weight);
-    for(map<node, int>::iterator it = this->E[from].begin(); it != E[from].end(); it++)
-        if(p == *it) return true;
+    for(auto item : this->E[from])
+        if(p == item) return true;
     return false;
 }
 
+//add edge to graph
 bool Graph::add_edge(const node from, const node to, const int weight)
 {
     if(from == to)
         return false;
 
     pair<node, int> p(to,weight);
+
+    //if it contains both vertices, add edge
     if(this->contains_vertex(from) && this->contains_vertex(to))
     {
         this->E[from].insert(p);
@@ -76,11 +78,7 @@ bool Graph::add_edge(const node from, const node to, const int weight)
 }
 
 //create graph with n vertices
-Graph::Graph(int num_nodes)
-{
-
-    init(num_nodes);
-}
+Graph::Graph(int num_nodes) { init(num_nodes); }
 
 //initialize edgelist & resreve space
 void Graph::init(int const nVertices) 
@@ -127,7 +125,5 @@ Graph::Graph(string flname)
     fl.close();
 }
 
-Graph::Graph() 
-{
-    this->num_edges = 0;
-}
+//default constructor
+Graph::Graph()  { this->num_edges = 0; }
