@@ -54,7 +54,7 @@ int main()
         {
             time_t t1 = time(NULL);
             cout << "Computer makes move"  << endl;
-            MC_simulator mcarlo(hB, ai, player, 1000);
+            MC_simulator mcarlo(hB, ai, player, 1000, 2);
             guess = mcarlo.get_next_move();
             //cout << "guess = " << guess << endl;
             time_t t2 = time(NULL);
