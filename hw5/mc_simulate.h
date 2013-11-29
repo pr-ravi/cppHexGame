@@ -3,41 +3,52 @@
 
 
 #include "hex_board.h"
+#include "basic_board.h"
 
 #include <thread>
 #include <algorithm>
 #include <tuple>
 #include <future>
 #include <functional>
+#include <random>
 
-//typedef position int;
 
 //Monte Carlo simulator
 class MC_simulator
 {
     private:
-        const HexBoard hB;
-        // tuple of (position, Hexboard, trial_result)
+        //original hex board
+        HexBoard const hB;
+
+        //vector of tuple (position, HexBoard, score)
         vector<tuple<int,HexBoard,int>> trials;
-        int num_positions;
-        int ai_level;
-        int num_threads;
-        const string ai_player;
-        const string player;
+
+        //"Red" || "Blue"
+        string const ai_player;
+        string const player;
+
+        int const ai_level;
+        int const num_threads;
+
+        //get score for given position
         int get_score(int const position, HexBoard board);
+        //mark a position, convinience function
         void move(int position, HexBoard& board, string cur_player);
-        int simulate(HexBoard board, vector<int> moves, int num_times);
+
+        void move(int const position, BasicBoard& board);
     public:
-        MC_simulator(const HexBoard& hB, string ai, string player, int ai_rank, int threads);
+        //call with the current hexboard, names of players, ai level and num of threads
+        MC_simulator(const HexBoard& hB, string ai, string player, int ai_rank);
+        //get move advised by MC simulation
         int get_next_move();
 };
 
-MC_simulator::MC_simulator(const HexBoard& hex, string ai, string player, int ai_rank, int threads) : 
+MC_simulator::MC_simulator(const HexBoard& hex, string const ai, string const player, int const ai_rank) : 
     hB(hex), 
     ai_player(ai), 
     player(player), 
     ai_level(ai_rank),
-    num_threads(threads)
+    num_threads(std::thread::hardware_concurrency())
 { 
     //reserve vectors
     trials.reserve(hB.bSize * hB.bSize - 1);
@@ -48,33 +59,34 @@ MC_simulator::MC_simulator(const HexBoard& hex, string ai, string player, int ai
     {
         if(elem == HexBoard::occupy::NONE)
             trials.push_back(make_tuple(i, hB, 0));
-        i++;
-    }    
-    num_positions = i - 1;
-
+        i += 1;
+    }
 }
+//
+    //num_threads(std::thread::hardware_concurrency())
 
-void inline MC_simulator::move(int position, HexBoard& board, string cur_player)
+void inline MC_simulator::move(int const position, HexBoard& board, string const cur_player)
 {
+    //get row and col from index, mark block on board
     int row = position / board.bSize;
     int col = position % board.bSize;
     board.mark(row, col, cur_player);
 }
-
-int MC_simulator::simulate(HexBoard board, vector<int> moves,  int num_times)
+void inline MC_simulator::move(int const position, BasicBoard& board)
 {
- //make random moves for both players ai_level times
-   int score = 0;
-   return score;
+    //get row and col from index, mark block on board
+    int row = position / board.bSize;
+    int col = position % board.bSize;
+    board.mark(row, col);
 }
+
 
 
 int MC_simulator::get_score(int const position, HexBoard board)
 { 
     int score = 0;
-    //int num_threads = 2;
 
-    //possilbe moves excluding initial move
+    //possible moves excluding initial move
     vector<int> moves;
     moves.reserve(trials.size() - 1);
 
@@ -82,57 +94,56 @@ int MC_simulator::get_score(int const position, HexBoard board)
         if (get<0>(t) != position)
             moves.push_back(get<0>(t));
 
-
-
-    //cout << endl <<"Initial Move :: " << position  << endl;
     //make initial move
     move(position, board, ai_player);
-    //cout << endl << "Simulation for " << position << endl;
 
-    //score+= simulate(board, moves, ai_level);
+        //std::random_device rd;
+        //std::mt19937 g(rd());
+    //run simulation ai_level times
     for(int i = 0; i < ai_level ; i++)
     {
-        
-        HexBoard h = board;
-        vector<int> shuffled_moves(moves);
-        random_shuffle(shuffled_moves.begin(), shuffled_moves.end());
+        //for each simulation, create a board
+        //shuffle the available moves
+        //and play till end
+        //HexBoard h = board;        
+       // std::shuffle(moves.begin(), moves.end(), g);
+ 
+        BasicBoard h(board, ai_player);
+        std::random_shuffle(moves.begin(), moves.end());
 
-        int k= 0;
-        for(auto pos : shuffled_moves)
+        //int k= 0;
+        //for(auto pos : moves);
+        cout << endl << "sim " << i  << " for position : " << position << endl;
+        for(unsigned long j = 0; j < (moves.size() /2) + 1; j++)
         {
+            //if(h.won())
+             //   break;
+            move(moves[j], h);
+            cout << moves[j] << " ";
+        }
+        cout << endl;
+        /*
+        int k= 0;
+        for(auto pos : moves)
+        {
+            if(h.won())
+                break;
+            //alternate players
             if( k % 2 == 0)
                 move(pos, h, player);
             else 
                 move(pos, h, ai_player);
             k++;
         }
-
+        */
+        //cout << endl <<h << endl;
+        //If winner is AI, increase score
         if (h.get_winner() == ai_player)
             score++;
     }
+    //cout << "Score for position " << position << " : " << score << endl;
+    //return final score for the inital position
     return score;
-/*
-    else 
-    {
-        vector<future<int>> threads;
-        threads.reserve(num_threads);
-
-        threads.push_back(std::async(std::launch::async,&MC_simulator::simulate,this,  board, moves, ai_level / num_threads + (ai_level % num_threads)));
-            //threads.push_back(std::async([=] () -> int { return simulate(board, moves,  ai_level / num_threads + (ai_level % num_threads)) ; }));
-        for(int i = 1; i < num_threads; i++)
-            threads.push_back(std::async(std::launch::async,&MC_simulator::simulate,this,  board, moves, ai_level / num_threads));
-            //threads.push_back(std::async([=] () -> int { return simulate(board, moves,  ai_level / num_threads) ; }));
-
-        for(int i = 0 ; i < num_threads; i++)
-            score += threads[i].get();
-        auto f1 = std::async([=] () -> int { return simulate(board, moves,  ai_level / 2 + ai_level % 2); });
-        auto f2 = std::async([=] () -> int { return simulate(board, moves,  ai_level / 2) ; });
-
-        score += f1.get();
-        score += f2.get();
-    }
-*/
-    //cout <<"Score: " << score  << endl;
 }
 
 
@@ -140,27 +151,47 @@ int MC_simulator::get_next_move()
 {
     int trial_size = trials.size();
     int position;
-    for(int i = 0; i < trial_size; i+= num_threads)
+
+    vector<future<int>> threads;
+    threads.reserve(trial_size);
+    //for(int i = 0; i < num_threads; i++)
+     //   threads[i] = nullptr;
+    //sequential computation
+    if(num_threads == 0)
     {
-        //get values from tuple
-        //
-        vector<future<int>> threads;
-        threads.reserve(num_threads);
-
-        for( int j = 0; j < num_threads; j++)
+        for(auto &trial :trials)
         {
-            position = get<0>(trials[i + j]);
-            HexBoard &board = get<1>(trials[i + j]);
-            if( i + j < trial_size)
-                threads.push_back(std::async(std::launch::async,&MC_simulator::get_score, this, position, board));
+            //get values from tuple
+            position = get<0>(trial);
+            HexBoard &board = get<1>(trial);
+            get<2>(trial) = get_score(position, board);
         }
+    }
+    else  //threaded computation
+    {
+        for(int i = 0; i < trial_size; i+= num_threads)
+        {
 
-        for( int j = 0; j < num_threads; j++)
-            if( i + j < trial_size)
-                get<2>(trials[i + j]) = threads[j].get();
+            //create threads for the next available positions
+            //e.g. t1,t2,t3,t4 for num_threads = 4
+            for( int j = 0; j < num_threads; j++)
+            {
+                position = get<0>(trials[i + j]);
+                HexBoard &board = get<1>(trials[i + j]);
+                if( i + j < trial_size)
+                    threads.push_back(std::async(std::launch::async,&MC_simulator::get_score, this, position, board));
+            }
+
+            //wait for result of threads
+            for( int j = 0; j < num_threads; j++)
+                if( i + j < trial_size)
+                    get<2>(trials[i + j]) = threads[i + j].get();
+        }
     }
 
-    //return get<2>( *std::max_element(trials.begin(), trials.end(), tup_greater));
+    //get move with maximum score
+    //3rd arg is a lamda, that compares two tuples 
+    //decltype is used to infer types
     return get<0>( *std::max_element(trials.begin(), trials.end(),
                 [] (tuple<int, HexBoard, int> t1, decltype(t1) t2) -> bool
                 { return get<2>(t1) < get<2>(t2); }

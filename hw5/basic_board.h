@@ -1,7 +1,8 @@
-#ifndef HEXBOARD_H
-#define HEXBOARD_H
+#ifndef BASIC_BOARD_H
+#define BASIC_BOARD_H
 
 #include "union_find.h"
+#include "hex_board.h"
 //#include "mc_simulate.h"
 #include <string>
 #include <iostream>
@@ -10,12 +11,10 @@ using namespace std;
 //model the hex board
 //A union find structure is used for different players
 //A vector of node states is used for modeling the color of a node
-class HexBoard
+class BasicBoard
 {
     private:
-        void add_edge(int index, string player);
-        //different states of each node
-        enum class occupy{ RED, BLUE, NONE }; 
+        void add_edge(int index);
         //virtual nodes
         struct 
         {
@@ -24,13 +23,14 @@ class HexBoard
             int BOTTOM;
             int LEFT;
         } vnodes;
-        //vector of the states
-        vector<occupy> blocks; 
+       //vector of the states
+        vector<HexBoard::occupy> blocks; 
         //ufB -> union find of blue
         //ufR -> union find of red
-        UnionFind ufR, ufB;
+        UnionFind uf;
         //winner
         string winner;
+        string player;
         //board size, 7 for 7x7 etc
         int bSize;
         void connect_virtual_nodes();
@@ -38,71 +38,43 @@ class HexBoard
     public:
         string get_winner();
         bool won();
-        HexBoard(int board_size);
+        BasicBoard(const HexBoard& hB, string player);
         //mark (row, col) as occupied with color
-        bool mark(const int row, const int col, const string player);
-        friend ostream& operator<<(ostream& out, HexBoard hb);
+        bool mark(const int row, const int col);
+        friend ostream& operator<<(ostream& out, BasicBoard hb);
         friend class MC_simulator;
-        friend class BasicBoard;
 };
 
-void HexBoard::connect_virtual_nodes()
+
+BasicBoard::BasicBoard(const HexBoard& hB, string player) : uf(player == "Red" ? hB.ufR : hB.ufB),
+                                                            player(player)
 {
-    int i;
-
-    //set virtual nodes values
-    vnodes.TOP = bSize * bSize;
-    vnodes.BOTTOM = bSize * bSize + 1;
-    vnodes.LEFT = bSize * bSize + 2;
-    vnodes.RIGHT = bSize * bSize + 3;
-
-    //conncect the virtual nodes
-    //for both players
-
-    //top row
-    for(i = 0; i < bSize; i++)
-        ufR.union_node(vnodes.TOP, i);
-
-    //bottom row
-    for(i = bSize * (bSize - 1); i < bSize * bSize; i++)
-        ufR.union_node(vnodes.BOTTOM, i);
-
-    //left column
-    for(i = 0; i < bSize * bSize; i+= bSize)
-        ufB.union_node(vnodes.LEFT, i);
-
-    //right column
-    for(i = bSize - 1; i < bSize * bSize; i+= bSize)
-        ufB.union_node(vnodes.RIGHT, i);
+    bSize = hB.bSize;
+    blocks = hB.blocks;
+    winner = hB.winner;
+    {
+        this->vnodes.TOP = hB.vnodes.TOP;
+        this->vnodes.LEFT = hB.vnodes.LEFT;
+        this->vnodes.RIGHT = hB.vnodes.RIGHT;
+        this->vnodes.BOTTOM = hB.vnodes.BOTTOM;
+    }
 }
 
-//initialize graphs, union find structures, color array etc
-HexBoard::HexBoard(int board_size) : ufR(UnionFind(board_size * board_size + 4)), 
-                                     ufB(UnionFind(board_size * board_size + 4))
-{
-    bSize = board_size;
-    
-    connect_virtual_nodes();
-
-    //set all empty blocks to none
-    blocks = vector<occupy>(board_size * board_size, occupy::NONE);
-    winner = "None";
-}
 
 //get name of winner
-string HexBoard::get_winner()
+string BasicBoard::get_winner()
 {
     return winner;
 }
 
 //is there a winnner?
-bool HexBoard::won()
+bool BasicBoard::won()
 {
     return winner != "None";
 }
 
 //mark node with selected color
-bool HexBoard::mark(const int row, const int col, const string player)
+bool BasicBoard::mark(const int row, const int col)
 {
     int index = row * bSize + col;
     //check boundary
@@ -112,12 +84,12 @@ bool HexBoard::mark(const int row, const int col, const string player)
         return false;
 
     //some other player already has node
-    if(blocks[index] != occupy::NONE)
+    if(blocks[index] != HexBoard::occupy::NONE)
         return false;
     else 
     {
-        blocks[index] = (player == "Red" ? occupy::RED : occupy::BLUE);
-        add_edge(index, player);
+        blocks[index] = (player == "Red" ? HexBoard::occupy::RED : HexBoard::occupy::BLUE);
+        add_edge(index);
         return true;
     }
 }
@@ -125,13 +97,13 @@ bool HexBoard::mark(const int row, const int col, const string player)
 //adds all possible edges form the node
 //first, we add all neighbouring edges to a vector
 //then, we union the trees
-void HexBoard::add_edge(int index, const string player)
+void BasicBoard::add_edge(int index)
 {
-    occupy state;
+    HexBoard::occupy state;
     if(player == "Blue")
-        state = occupy::BLUE;
+        state = HexBoard::occupy::BLUE;
     else 
-        state = occupy::RED;
+        state = HexBoard::occupy::RED;
     vector<pair<int, int>> edges;
     edges.reserve(6);
 
@@ -216,19 +188,22 @@ void HexBoard::add_edge(int index, const string player)
        if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
    }
 
+   //cout << " hmm ? ";
    //Union the trees
-   if(player == "Red")
     for(auto item : edges)
-        ufR.union_node(item.first, item.second);
-   else 
-    for(auto item : edges)
-        ufB.union_node(item.first, item.second);
+        uf.union_node(item.first, item.second);
 
-   //did blue win?
-   if(player == "Blue" && ufB.is_connected(vnodes.LEFT, vnodes.RIGHT))
-       winner = "Blue";
-   else if(ufR.is_connected(vnodes.TOP, vnodes.BOTTOM))
+    //cout << "how?";
+   
+    //did blue win?
+   if(player == "Blue")
+   {
+       if( uf.is_connected(vnodes.LEFT, vnodes.RIGHT))
+           winner = "Blue";
+   }
+   else if(uf.is_connected(vnodes.TOP, vnodes.BOTTOM))
        winner = "Red";
+
 
    
 /*
@@ -268,10 +243,10 @@ void HexBoard::add_edge(int index, const string player)
 */
   }
 
-
+/*
 //print hex board, mostly hacked and still not right, 
 //so not bothering to comment it:(
-ostream& operator<<(ostream& out, HexBoard hb)
+ostream& operator<<(ostream& out, BasicBoard hb)
 {   
     int cur_index;
     for(int i = 0; i < hb.bSize; i++)
@@ -304,5 +279,6 @@ ostream& operator<<(ostream& out, HexBoard hb)
 
     return out;
 }
+*/
 
 #endif

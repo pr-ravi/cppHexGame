@@ -2,11 +2,13 @@
 #include "union_find.h"
 #include "mc_simulate.h"
 #include <time.h>
+#include <thread>
 
 /* Homework 4 */
 
 int main()
 {
+    cout << "Threads = " << std::thread::hardware_concurrency() << endl;
     std::srand (unsigned (time(0)));
     int bSize; 
     cout << "Enter the board size: ";
@@ -54,7 +56,7 @@ int main()
         {
             time_t t1 = time(NULL);
             cout << "Computer makes move"  << endl;
-            MC_simulator mcarlo(hB, ai, player, 1000, 2);
+            MC_simulator mcarlo(hB, ai, player,ai_diff);
             guess = mcarlo.get_next_move();
             //cout << "guess = " << guess << endl;
             time_t t2 = time(NULL);
