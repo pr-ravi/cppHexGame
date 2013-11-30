@@ -227,7 +227,7 @@ void HexBoard::add_edge(int index, const string player)
    //did blue win?
    if(player == "Blue" && ufB.is_connected(vnodes.LEFT, vnodes.RIGHT))
        winner = "Blue";
-   else if(ufR.is_connected(vnodes.TOP, vnodes.BOTTOM))
+   else if(player == "Red" && ufR.is_connected(vnodes.TOP, vnodes.BOTTOM))
        winner = "Red";
 
    

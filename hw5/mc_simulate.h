@@ -105,23 +105,34 @@ int MC_simulator::get_score(int const position, HexBoard board)
         //for each simulation, create a board
         //shuffle the available moves
         //and play till end
-        //HexBoard h = board;        
+        HexBoard h = board;        
+       // HexBoard g = board;        
        // std::shuffle(moves.begin(), moves.end(), g);
  
-        BasicBoard h(board, ai_player);
+        //BasicBoard h(board, ai_player);
         std::random_shuffle(moves.begin(), moves.end());
 
         //int k= 0;
         //for(auto pos : moves);
-        cout << endl << "sim " << i  << " for position : " << position << endl;
-        for(unsigned long j = 0; j < (moves.size() /2) + 1; j++)
+        //cout << endl << "sim " << i  << " for position : " << position << endl;
+        /*for(unsigned long j = 0; j < (moves.size() /2) + 1; j++)
         {
             //if(h.won())
              //   break;
             move(moves[j], h);
             cout << moves[j] << " ";
         }
-        cout << endl;
+        */
+        //cout << endl;
+        for(unsigned long k = 0; k < moves.size() / 2; k++)
+        {
+            //if(h.won())
+             //  break;
+            //alternate players
+            //if(k % 2 == 1)
+                move(moves[k], h, ai_player);
+            //cout << moves[k] << " ";
+        }
         /*
         int k= 0;
         for(auto pos : moves)
@@ -138,6 +149,9 @@ int MC_simulator::get_score(int const position, HexBoard board)
         */
         //cout << endl <<h << endl;
         //If winner is AI, increase score
+        //cout << "h winner? " << (h.get_winner() == ai_player ? "Yes" : "No") << " , g winner? " <<  (g.get_winner() == ai_player ? "Yes" : "No") << endl;
+       // if(h.get_winner() == ai_player)
+        //    else if (g.get_winner() == ai
         if (h.get_winner() == ai_player)
             score++;
     }
@@ -185,7 +199,10 @@ int MC_simulator::get_next_move()
             //wait for result of threads
             for( int j = 0; j < num_threads; j++)
                 if( i + j < trial_size)
+                {
                     get<2>(trials[i + j]) = threads[i + j].get();
+                    //cout << "score for position:  " << get<0>(trials[i + j])  << " is " << get<2>(trials[i + j]) << endl;
+                }
         }
     }
 
