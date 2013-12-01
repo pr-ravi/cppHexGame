@@ -3,14 +3,11 @@
 
 
 #include "hex_board.h"
-#include "basic_board.h"
 
 #include <thread>
 #include <algorithm>
 #include <tuple>
 #include <future>
-#include <functional>
-#include <random>
 
 
 //Monte Carlo simulator
@@ -27,33 +24,36 @@ class MC_simulator
         string const ai_player;
         string const player;
 
+        //level of ai and thread number
         int const ai_level;
         int const num_threads;
 
         //get score for given position
         int get_score(int const position, HexBoard board);
+
         //mark a position, convinience function
         void move(int position, HexBoard& board, string cur_player);
 
-        void move(int const position, BasicBoard& board);
     public:
         //call with the current hexboard, names of players, ai level and num of threads
-        MC_simulator(const HexBoard& hB, string ai, string player, int ai_rank);
+        MC_simulator(const HexBoard& hB, string ai, string player, int ai_rank, int threads);
+
         //get move advised by MC simulation
         int get_next_move();
 };
 
-MC_simulator::MC_simulator(const HexBoard& hex, string const ai, string const player, int const ai_rank) : 
+//create MC simulator from hexboard
+MC_simulator::MC_simulator(const HexBoard& hex, string const ai, string const player, int const ai_rank, int threads) : 
     hB(hex), 
     ai_player(ai), 
     player(player), 
     ai_level(ai_rank),
-    num_threads(std::thread::hardware_concurrency())
+    num_threads(threads)
 { 
-    //reserve vectors
+    //reserve vector
     trials.reserve(hB.bSize * hB.bSize - 1);
 
-    //add available positions
+    //add available positions to trial vector
     int  i = 0;
     for(auto elem : hB.blocks)
     {
@@ -62,9 +62,8 @@ MC_simulator::MC_simulator(const HexBoard& hex, string const ai, string const pl
         i += 1;
     }
 }
-//
-    //num_threads(std::thread::hardware_concurrency())
 
+//convinience function
 void inline MC_simulator::move(int const position, HexBoard& board, string const cur_player)
 {
     //get row and col from index, mark block on board
@@ -72,14 +71,6 @@ void inline MC_simulator::move(int const position, HexBoard& board, string const
     int col = position % board.bSize;
     board.mark(row, col, cur_player);
 }
-void inline MC_simulator::move(int const position, BasicBoard& board)
-{
-    //get row and col from index, mark block on board
-    int row = position / board.bSize;
-    int col = position % board.bSize;
-    board.mark(row, col);
-}
-
 
 
 int MC_simulator::get_score(int const position, HexBoard board)
@@ -97,70 +88,30 @@ int MC_simulator::get_score(int const position, HexBoard board)
     //make initial move
     move(position, board, ai_player);
 
-        //std::random_device rd;
-        //std::mt19937 g(rd());
     //run simulation ai_level times
     for(int i = 0; i < ai_level ; i++)
     {
-        //for each simulation, create a board
-        //shuffle the available moves
-        //and play till end
+        //create new board
         HexBoard h = board;        
-       // HexBoard g = board;        
-       // std::shuffle(moves.begin(), moves.end(), g);
- 
-        //BasicBoard h(board, ai_player);
+
+        //shuffle the moves
         std::random_shuffle(moves.begin(), moves.end());
 
-        //int k= 0;
-        //for(auto pos : moves);
-        //cout << endl << "sim " << i  << " for position : " << position << endl;
-        /*for(unsigned long j = 0; j < (moves.size() /2) + 1; j++)
-        {
-            //if(h.won())
-             //   break;
-            move(moves[j], h);
-            cout << moves[j] << " ";
-        }
-        */
-        //cout << endl;
+        //play half of the moves as ai
         for(unsigned long k = 0; k < moves.size() / 2; k++)
-        {
-            //if(h.won())
-             //  break;
-            //alternate players
-            //if(k % 2 == 1)
-                move(moves[k], h, ai_player);
-            //cout << moves[k] << " ";
-        }
-        /*
-        int k= 0;
-        for(auto pos : moves)
-        {
-            if(h.won())
-                break;
-            //alternate players
-            if( k % 2 == 0)
-                move(pos, h, player);
-            else 
-                move(pos, h, ai_player);
-            k++;
-        }
-        */
-        //cout << endl <<h << endl;
-        //If winner is AI, increase score
-        //cout << "h winner? " << (h.get_winner() == ai_player ? "Yes" : "No") << " , g winner? " <<  (g.get_winner() == ai_player ? "Yes" : "No") << endl;
-       // if(h.get_winner() == ai_player)
-        //    else if (g.get_winner() == ai
+            move(moves[k], h, ai_player);
+
+        //did ai win? if so, increase score of position
         if (h.get_winner() == ai_player)
             score++;
     }
-    //cout << "Score for position " << position << " : " << score << endl;
+
     //return final score for the inital position
     return score;
 }
 
 
+//next best move
 int MC_simulator::get_next_move()
 {
     int trial_size = trials.size();
@@ -168,8 +119,7 @@ int MC_simulator::get_next_move()
 
     vector<future<int>> threads;
     threads.reserve(trial_size);
-    //for(int i = 0; i < num_threads; i++)
-     //   threads[i] = nullptr;
+
     //sequential computation
     if(num_threads == 0)
     {
@@ -199,10 +149,7 @@ int MC_simulator::get_next_move()
             //wait for result of threads
             for( int j = 0; j < num_threads; j++)
                 if( i + j < trial_size)
-                {
                     get<2>(trials[i + j]) = threads[i + j].get();
-                    //cout << "score for position:  " << get<0>(trials[i + j])  << " is " << get<2>(trials[i + j]) << endl;
-                }
         }
     }
 

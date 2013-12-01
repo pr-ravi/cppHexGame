@@ -2,11 +2,11 @@
 #define HEXBOARD_H
 
 #include "union_find.h"
-//#include "mc_simulate.h"
 #include <string>
 #include <iostream>
 
 using namespace std;
+
 //model the hex board
 //A union find structure is used for different players
 //A vector of node states is used for modeling the color of a node
@@ -33,19 +33,23 @@ class HexBoard
         string winner;
         //board size, 7 for 7x7 etc
         int bSize;
+        //for faster union find
         void connect_virtual_nodes();
-    
+
     public:
+        //find winner
         string get_winner();
-        bool won();
+        //construct empty hexboard
         HexBoard(int board_size);
         //mark (row, col) as occupied with color
         bool mark(const int row, const int col, const string player);
+        //for printing
         friend ostream& operator<<(ostream& out, HexBoard hb);
+        //MC needs to access some private members
         friend class MC_simulator;
-        friend class BasicBoard;
 };
 
+//connect virtual nodes, makes finding winner easier
 void HexBoard::connect_virtual_nodes()
 {
     int i;
@@ -81,10 +85,10 @@ HexBoard::HexBoard(int board_size) : ufR(UnionFind(board_size * board_size + 4))
                                      ufB(UnionFind(board_size * board_size + 4))
 {
     bSize = board_size;
-    
+
     connect_virtual_nodes();
 
-    //set all empty blocks to none
+    //set all empty blocks to free
     blocks = vector<occupy>(board_size * board_size, occupy::NONE);
     winner = "None";
 }
@@ -92,13 +96,11 @@ HexBoard::HexBoard(int board_size) : ufR(UnionFind(board_size * board_size + 4))
 //get name of winner
 string HexBoard::get_winner()
 {
+    if(ufB.is_connected(vnodes.LEFT, vnodes.RIGHT))
+        winner = "Blue";
+    else if(ufR.is_connected(vnodes.TOP, vnodes.BOTTOM))
+        winner = "Red";
     return winner;
-}
-
-//is there a winnner?
-bool HexBoard::won()
-{
-    return winner != "None";
 }
 
 //mark node with selected color
@@ -135,171 +137,128 @@ void HexBoard::add_edge(int index, const string player)
     vector<pair<int, int>> edges;
     edges.reserve(6);
 
-   //long conditions upcoming,
-   //i = index
-   //sz  = size of hex board eg 7 for 7x7
-   // top left corner
-   if(index == 0)
-   {
-       //two neighbours, i + 1 and i + sz
-       if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
-       if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
-   }
-   //top right corner
-   else if(index == bSize - 1)
-   {
-       // i - 1, i + sz, i + sz - 1
-       if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
-       if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
-       if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
-   }
-   //bottom left corner
-   else if(index == bSize * (bSize -1))
-   {
-       //i - sz, i + 1, i - sz + 1
-       if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
-       if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
-       if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
-   }
-   //bottom right corner
-   else if(index == bSize * bSize - 1)
-   {
-       //i - 1, i - sz
-       if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
-       if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
-   }
-   //top row
-   else if(index < bSize)
-   {
-       //i + 1, i - 1, i + sz, i + sz - 1
-       if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
-       if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
-       if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
-       if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
-   }
-   //bottom row
-   else if(index > bSize * (bSize - 1))
-   {
-       //i + 1, i - 1, i - sz, i - sz + 1
-       if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
-       if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
-       if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
-       if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
-   }
-   //leftmost column
-   else if(index % bSize == 0)
-   {
-       //i + 1, i + sz, i - sz, i - sz + 1
-       if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
-       if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
-       if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
-       if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
-   }
-   //rightmost column
-   else if(index % bSize == bSize - 1)
-   {
-       //i - 1, i + sz, i - sz, i + sz - 1
-       if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
-       if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
-       if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
-       if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
-   }
-   //internal nodes
-   else
-   {
-       //i + 1, i - 1, i + sz, i - sz, i + sz - 1, i - sz + 1
-       if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
-       if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
-       if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
-       if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
-       if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
-       if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
-   }
+    //long conditions upcoming,
+    //i = index
+    //sz  = size of hex board eg 7 for 7x7
+    // top left corner
+    if(index == 0)
+    {
+        //two neighbours, i + 1 and i + sz
+        if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
+        if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
+    }
+    //top right corner
+    else if(index == bSize - 1)
+    {
+        // i - 1, i + sz, i + sz - 1
+        if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
+        if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
+        if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
+    }
+    //bottom left corner
+    else if(index == bSize * (bSize -1))
+    {
+        //i - sz, i + 1, i - sz + 1
+        if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
+        if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
+        if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
+    }
+    //bottom right corner
+    else if(index == bSize * bSize - 1)
+    {
+        //i - 1, i - sz
+        if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
+        if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
+    }
+    //top row
+    else if(index < bSize)
+    {
+        //i + 1, i - 1, i + sz, i + sz - 1
+        if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
+        if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
+        if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
+        if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
+    }
+    //bottom row
+    else if(index > bSize * (bSize - 1))
+    {
+        //i + 1, i - 1, i - sz, i - sz + 1
+        if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
+        if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
+        if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
+        if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
+    }
+    //leftmost column
+    else if(index % bSize == 0)
+    {
+        //i + 1, i + sz, i - sz, i - sz + 1
+        if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
+        if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
+        if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
+        if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
+    }
+    //rightmost column
+    else if(index % bSize == bSize - 1)
+    {
+        //i - 1, i + sz, i - sz, i + sz - 1
+        if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
+        if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
+        if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
+        if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
+    }
+    //internal nodes
+    else
+    {
+        //i + 1, i - 1, i + sz, i - sz, i + sz - 1, i - sz + 1
+        if(blocks[index -         1] == state) edges.push_back(make_pair(index, index -         1));
+        if(blocks[index +         1] == state) edges.push_back(make_pair(index, index +         1));
+        if(blocks[index +     bSize] == state) edges.push_back(make_pair(index, index +     bSize));
+        if(blocks[index -     bSize] == state) edges.push_back(make_pair(index, index -     bSize));
+        if(blocks[index + bSize - 1] == state) edges.push_back(make_pair(index, index + bSize - 1));
+        if(blocks[index - bSize + 1] == state) edges.push_back(make_pair(index, index - bSize + 1));
+    }
 
-   //Union the trees
-   if(player == "Red")
-    for(auto item : edges)
-        ufR.union_node(item.first, item.second);
-   else 
-    for(auto item : edges)
-        ufB.union_node(item.first, item.second);
-
-   //did blue win?
-   if(player == "Blue" && ufB.is_connected(vnodes.LEFT, vnodes.RIGHT))
-       winner = "Blue";
-   else if(player == "Red" && ufR.is_connected(vnodes.TOP, vnodes.BOTTOM))
-       winner = "Red";
-
-   
-/*
-   //did blue win ?
-   if(player == "Blue")
-   {
-       //check if any in left most column is in same tree as the node
-       for(int i = 0; i < bSize * bSize; i+=bSize)
-           if(ufB.is_connected(i, index))
-           {
-               //then check right most column
-               for(int j = bSize - 1; j < bSize * bSize; j += bSize)
-                   if(ufB.is_connected(j, index))
-                   {
-                       winner = "Blue";
-                       return;
-                   }
-               break;
-           }
-   }
-   //did red win?
-   else
-       //check if any in top column is in same tree as the node
-       for(int i = 0; i < bSize; i++)
-           if(ufR.is_connected(i, index))
-           {
-               //then check bottom most column
-               for(int j = bSize * (bSize - 1); j < bSize * bSize; j++)
-                   if(ufR.is_connected(j, index))
-                   {
-                       winner = "Red";
-                       return;
-                   }
-               break;
-           }
-
-*/
-  }
+    //Union the trees
+    if(player == "Red")
+        for(auto item : edges)
+            ufR.union_node(item.first, item.second);
+    else 
+        for(auto item : edges)
+            ufB.union_node(item.first, item.second);
+}
 
 
-//print hex board, mostly hacked and still not right, 
+//print hex board, still not right 
 //so not bothering to comment it:(
 ostream& operator<<(ostream& out, HexBoard hb)
 {   
     int cur_index;
     for(int i = 0; i < hb.bSize; i++)
     {
-       for(int k =0; k < i; k++) { cout << " "; }
-       for(int j = 0 ; j < hb.bSize; j++)
-       {
-           cur_index = i * hb.bSize + j;
-           if(hb.blocks[cur_index] == HexBoard::occupy::RED)
-               cout << "R";
-           else if(hb.blocks[cur_index] == HexBoard::occupy::BLUE)
-               cout << "B";
-           else
-               cout << ".";
-           if(j != hb.bSize - 1)
-               cout << " - ";
-       }
-       cout << endl;
-       for(int k =0; k < i ; k++) { cout << " "; }
-       cout<< " ";
-       for(int k =0; k < hb.bSize && i != hb.bSize - 1; k++)
-       {
-           if(k ==0)
-               cout << "\\";
-           else cout << " / \\";
-           if( k == hb.bSize - 1)
-               cout << endl;
-       }
+        for(int k =0; k < i; k++) { cout << " "; }
+        for(int j = 0 ; j < hb.bSize; j++)
+        {
+            cur_index = i * hb.bSize + j;
+            if(hb.blocks[cur_index] == HexBoard::occupy::RED)
+                cout << "R";
+            else if(hb.blocks[cur_index] == HexBoard::occupy::BLUE)
+                cout << "B";
+            else
+                cout << ".";
+            if(j != hb.bSize - 1)
+                cout << " - ";
+        }
+        cout << endl;
+        for(int k =0; k < i ; k++) { cout << " "; }
+        cout<< " ";
+        for(int k =0; k < hb.bSize && i != hb.bSize - 1; k++)
+        {
+            if(k ==0)
+                cout << "\\";
+            else cout << " / \\";
+            if( k == hb.bSize - 1)
+                cout << endl;
+        }
     }
 
     return out;
